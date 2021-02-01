@@ -19,6 +19,15 @@ const unsigned int pf = PARALLELISATION;
 #define PARALLELISATION 8
 #endif
 
+#ifndef HASH_UNITS
+#define HASH_UNITS (PARALLELISATION * 2)
+#endif
+
+// To be able to use macros within pragmas
+// From https://www.xilinx.com/support/answers/46111.html
+#define PRAGMA_SUB(x) _Pragma (#x)
+#define DO_PRAGMA(x) PRAGMA_SUB(x)
+
 typedef ap_uint<sizeof(int )*8*PARALLELISATION> parallel_words_t; 
 typedef ap_uint<sizeof(char)*8*PARALLELISATION> parallel_flags_t; 
 
@@ -47,6 +56,7 @@ void compute_hash_flags (
         unsigned int                   bloom_filter_local[PARALLELISATION][bloom_filter_size],
         unsigned int                   total_size) 
 {
+  DO_PRAGMA(#pragma HLS ALLOCATION function instances=MurmurHash2 limit=HASH_UNITS)
   compute_flags: for(int i=0; i<total_size/PARALLELISATION; i++)
   {
     #pragma HLS LOOP_TRIPCOUNT min=1 max=t_size/pf

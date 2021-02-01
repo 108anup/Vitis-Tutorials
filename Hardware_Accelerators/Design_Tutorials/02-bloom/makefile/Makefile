@@ -4,10 +4,10 @@ TARGET := hw
 #####################################################################################################
 ## Detemines how many batches of buffers are sent from host to kernel
 #####################################################################################################
-ITER   := 
+ITER   :=
 
 #####################################################################################################
-## PF sets how many words to process in parallel 
+## PF sets how many words to process in parallel
 #####################################################################################################
 PF     := 8
 ifeq ($(STEP), kernel_4)
@@ -17,14 +17,19 @@ ifeq ($(STEP), kernel_16)
 PF   := 16
 endif
 
+#####################################################################################################
+## HASH_UNIT_COUNT sets how many hash units can be instantiated
+#####################################################################################################
+HASH_UNIT_COUNT ?= $$(( $(PF) * 2 ))
 
-PLATFORM :=xilinx_u200_xdma_201830_2
+# PLATFORM :=xilinx_u200_xdma_201830_2
+PLATFORM := xilinx_u280_xdma_201920_3
 
 SRCDIR := ./../reference_files
 
 # Default Settings here ..
 HOST_SRC_CPP := $(SRCDIR)/compute_score_host.cpp
-BUILDDIR := ./../build/$(STEP)/kernel_$(PF)/$(TARGET)
+BUILDDIR := ./../hash-build/$(STEP)/kernel_$(PF)/hash_$(HASH_UNIT_COUNT)/$(TARGET)
 
 
 # Common Source Code for FPGA and Host
@@ -32,7 +37,7 @@ HOST_SRC_FPGA := $(SRCDIR)/compute_score_fpga_kernel.cpp
 HOST_SRC_CPP := $(SRCDIR)/compute_score_host.cpp
 HOST_SRC_CPP += $(SRCDIR)/MurmurHash2.c
 HOST_SRC_CPP += $(SRCDIR)/xcl2.cpp
-HOST_SRC_CPP += $(SRCDIR)/main.cpp 
+HOST_SRC_CPP += $(SRCDIR)/main.cpp
 
 #### For the following steps, don't rebuild the kernels as only Host is changing
 ifeq ($(STEP), $(filter $(STEP), split_buffer , generic_buffer , sw_overlap ))
@@ -40,7 +45,7 @@ NOXCLBIN=1
 endif
 
 #####################################################################################################
-##  User appropriate host file 
+##  User appropriate host file
 #####################################################################################################
 HOST_SRC_RUN_CPP = $(SRCDIR)/run_single_buffer.cpp
 ifeq ($(STEP),multiDDR)
@@ -61,7 +66,7 @@ include common.mk
 
 setup:
 	if ! [ -f temp.txt ]; \
-  	then \
+	then \
 		touch temp.txt; \
 		sudo -E -- bash -c 'source ~/aws-fpga/sdaccel_setup.sh'; \
 	fi;
@@ -81,29 +86,29 @@ compile_host:  host
 #####################################################################################################
 ifeq ($(SOLUTION),1)
 build: compile_host $(BUILDDIR)/$(EMCONFIG_FILE)
-		@echo "Copying the xclbin saved from xclbin_save to $(BUILDDIR) "; 
+		@echo "Copying the xclbin saved from xclbin_save to $(BUILDDIR) ";
 ifeq ($(STEP),multiDDR)
-		cp ../xclbin_save/multiDDR/runOnfpga_$(TARGET).xclbin $(BUILDDIR); 
+		cp ../xclbin_save/multiDDR/runOnfpga_$(TARGET).xclbin $(BUILDDIR);
 else
-		cp ../xclbin_save/kernel_$(PF)/runOnfpga_$(TARGET).xclbin $(BUILDDIR); 
+		cp ../xclbin_save/kernel_$(PF)/runOnfpga_$(TARGET).xclbin $(BUILDDIR);
 endif
 else
 ifeq ($(NOXCLBIN),1)
 build: compile_host $(BUILDDIR)/$(EMCONFIG_FILE)
-	if [ -f ../build/single_buffer/kernel_$(PF)/$(TARGET)/runOnfpga_$(TARGET).xclbin ]; \
-  	then \
+	if [ -f ../hash-build/single_buffer/kernel_$(PF)/hash_$(HASH_UNIT_COUNT)/$(TARGET)/runOnfpga_$(TARGET).xclbin ]; \
+	then \
 		echo "Copying the xclbin created from single_bufer to $(BUILDDIR) "; \
-		cp ../build/single_buffer/kernel_$(PF)/$(TARGET)/runOnfpga_$(TARGET).xclbin $(BUILDDIR);  \
+		cp ../hash-build/single_buffer/kernel_$(PF)/hash_$(HASH_UNIT_COUNT)/$(TARGET)/runOnfpga_$(TARGET).xclbin $(BUILDDIR);  \
 	fi;
-	if ! [ -f ../build/single_buffer/kernel_$(PF)/$(TARGET)/runOnfpga_$(TARGET).xclbin ]; \
-  	then \
+	if ! [ -f ../hash-build/single_buffer/kernel_$(PF)/hash_$(HASH_UNIT_COUNT)/$(TARGET)/runOnfpga_$(TARGET).xclbin ]; \
+	then \
 		echo ""; \
 		echo "***   Please run STEP=single_buffer first! *** "; \
 		echo ""; \
 	fi;
 else
 #####################################################################################################
-###  If SOLUTION != 1 and NOXCLBIN != 1, generate the xclbin from scrath. 
+###  If SOLUTION != 1 and NOXCLBIN != 1, generate the xclbin from scrath.
 ###  Required if using other than U200 platform
 ###  For multiDDR optional step, this is always executed
 #####################################################################################################
@@ -112,8 +117,8 @@ endif
 endif
 
 #####################################################################################################
-###   For HW run, use 100,000 words for computation 
-###   For Emulation run, use 100 words for computation 
+###   For HW run, use 100,000 words for computation
+###   For Emulation run, use 100 words for computation
 #####################################################################################################
 
 run:   build host
@@ -122,17 +127,17 @@ ifeq ($(TARGET), hw)
 	@echo "************  Use Command Line to run application!  ************"
 	cd $(BUILDDIR) && ./host 100000 $(ITER) ;
 else
-	@echo "Running $(TAGET) mode"; 
+	@echo "Running $(TARGET) mode";
 	emconfigutil --nd 1  --platform $(PLATFORM) --od $(BUILDDIR)
 	cd $(BUILDDIR) && XCL_EMULATION_MODE=$(TARGET) ./host 100 $(ITER) ;
 endif
 
 #####################################################################################################
-###  make target to run all the build/run targets. 
-###  Following will generate all the xclbins and run all steps 
+###  make target to run all the build/run targets.
+###  Following will generate all the xclbins and run all steps
 ###  e.g. make execute_all ACTION=run TARGET=hw
 #####################################################################################################
-	 
+
 execute_all :
 	cd $(CURRENT_DIR); make $(ACTION) STEP=single_buffer TARGET=$(TARGET)  PF=4
 	cd $(CURRENT_DIR); make $(ACTION) STEP=single_buffer TARGET=$(TARGET)  PF=8

@@ -11,6 +11,7 @@
 		--log_dir ./$(BUILDDIR)/log_dir \
 		-I$(SRCDIR) \
 		-DPARALLELISATION=$(PF) \
+		-DHASH_UNITS=$(HASH_UNIT_COUNT) \
 		$(HOST_SRC_FPGA) \
 		-o ./$(BUILDDIR)/runOnfpga_$(TARGET).xo
 
@@ -36,7 +37,7 @@ else
 		--platform $(PLATFORM) \
                 --profile_kernel data:all:all:all \
                 --profile_kernel stall:all:all:all \
-		--trace_memory DDR[3] \
+		--trace_memory DDR[1] \
 		--temp_dir ./$(BUILDDIR)/temp_dir \
 		--report_dir ./$(BUILDDIR)/report_dir \
 		--log_dir ./$(BUILDDIR)/log_dir \
