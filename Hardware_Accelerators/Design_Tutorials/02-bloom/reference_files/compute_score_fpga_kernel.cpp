@@ -56,7 +56,7 @@ void compute_hash_flags (
         unsigned int                   bloom_filter_local[PARALLELISATION][bloom_filter_size],
         unsigned int                   total_size) 
 {
-  DO_PRAGMA(#pragma HLS ALLOCATION function instances=MurmurHash2 limit=HASH_UNITS)
+  DO_PRAGMA(HLS ALLOCATION function instances=MurmurHash2 limit=HASH_UNITS)
   compute_flags: for(int i=0; i<total_size/PARALLELISATION; i++)
   {
     #pragma HLS LOOP_TRIPCOUNT min=1 max=t_size/pf
