@@ -132,8 +132,8 @@ extern "C"
     if(download_sketch==true)
     {
     write_cm_sketch: for(int row = 0; row<cm_rows; row++) {
-#pragma HLS PIPELINE II=1
         for(int index = 0; index<cm_col_count; index++) {
+#pragma HLS PIPELINE II=1
           cm_sketch[row][index] = cm_sketch_local[row][index];
         }
       }

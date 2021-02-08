@@ -1,7 +1,8 @@
 #pragma once
 
 #define hash_bloom 0x7ffff
-#define cm_cols 14
+// #define cm_cols 14
+#define cm_cols 5
 #define cm_rows 4
 #define docTag 0xffffffff
 
