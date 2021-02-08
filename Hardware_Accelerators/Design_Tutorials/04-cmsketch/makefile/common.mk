@@ -4,7 +4,7 @@
 		--platform $(PLATFORM) \
                 --profile_kernel data:all:all:all \
                 --profile_kernel stall:all:all:all \
-		--trace_memory DDR[3] \
+		--trace_memory DDR[1] \
 		--save-temps \
 		--temp_dir ./$(BUILDDIR)/temp_dir \
 		--report_dir ./$(BUILDDIR)/report_dir \
@@ -21,7 +21,7 @@ ifeq ($(STEP),multiDDR)
 		--platform $(PLATFORM) \
                 --profile_kernel data:all:all:all \
                 --profile_kernel stall:all:all:all \
-		--trace_memory DDR[3] \
+		--trace_memory DDR[1] \
 		--temp_dir ./$(BUILDDIR)/temp_dir \
 		--report_dir ./$(BUILDDIR)/report_dir \
 		--log_dir ./$(BUILDDIR)/log_dir \

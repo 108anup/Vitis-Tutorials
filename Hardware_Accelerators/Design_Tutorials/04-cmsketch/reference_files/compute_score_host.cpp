@@ -19,8 +19,11 @@ void runOnCPU (
     unsigned int   total_num_docs,
     unsigned int   total_size)
 {
+  // unsigned total_word_count = 0;
     unsigned int size_offset=0;
     chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+
+    // std::cout<<"CPU words start"<<endl;
 
     for(unsigned int doc=0;doc<total_num_docs;doc++) 
     {
@@ -29,6 +32,7 @@ void runOnCPU (
         { 
             unsigned curr_entry = input_doc_words[size_offset+i];
             unsigned word_id = curr_entry >> 8;
+            // total_word_count++;
             for(int row = 0; row < cm_rows; row++) {
               unsigned hash = MurmurHash2(&word_id, 3, cm_seeds[row]);
               unsigned index = hash % cm_col_count;
@@ -37,6 +41,10 @@ void runOnCPU (
         }
         size_offset+=size;
     }
+    // std::cout<<"CPU words count"<<total_word_count<<endl;
+
+    // std::cout<<"CPU words end"<<endl;
+    // printf("CPU bad_word count: %u", bad_count);
    
     chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
     chrono::duration<double> time_span_cpu   = (t2-t1);

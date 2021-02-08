@@ -50,6 +50,9 @@ void update_sketch (hls::stream<parallel_words_t>& word_stream,
                     unsigned int                   cm_sketch_local[cm_rows][cm_col_count],
                     unsigned int                   total_size)
 {
+  // std::cout<<"FPGA total_size: "<< total_size<<"\n";
+  // std::cout<<"FPGA words start \n";
+
   DO_PRAGMA(HLS ALLOCATION function instances=MurmurHash2 limit=HASH_UNITS)
   update_sketch_loop: for(int i=0; i<total_size/PARALLELISATION; i++)
   {
@@ -63,6 +66,7 @@ void update_sketch (hls::stream<parallel_words_t>& word_stream,
       unsigned int curr_entry = parallel_entries(31+j*32, j*32);
       // unsigned int frequency = curr_entry & 0x00ff; // not used
       unsigned int word_id = curr_entry >> 8; // that is why max length 3
+      // std::cout<<word_id<<"\n";
 
       update_rows_loop: for(int row = 0; row < cm_rows; row++) {
 #pragma HLS UNROLL
@@ -73,6 +77,8 @@ void update_sketch (hls::stream<parallel_words_t>& word_stream,
       }
     }
   }
+  // std::cout<<"FPGA words end\n";
+
 }
 
 void update_sketch_dataflow(

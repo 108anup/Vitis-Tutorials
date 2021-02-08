@@ -12,3 +12,5 @@ const unsigned int cm_seeds[] = {
   0xf6b9b30b, 0xfd6dabc6, 0xba3eb757, 0xd1dd1308
 };
 
+// this is actually docTag above :P
+// const unsigned bad_word = 16777215;
