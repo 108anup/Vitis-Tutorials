@@ -110,18 +110,19 @@ extern "C"
   // (Maybe for 1d array not much difference?)
   void runOnfpga (
           ap_uint<512>*  input_words,
-          unsigned int   cm_sketch[cm_rows][cm_col_count],
+          unsigned int*  cm_sketch,
           unsigned int   total_size,
           bool           download_sketch)
   {
   #pragma HLS INTERFACE ap_ctrl_chain port=return            bundle=control
   #pragma HLS INTERFACE m_axi         port=input_words       bundle=maxiport0   offset=slave
-  #pragma HLS INTERFACE m_axi         port=cm_sketch         bundle=maxiport1   offset=slave
+  #pragma HLS INTERFACE m_axi         port=cm_sketch         bundle=maxiport0   offset=slave
 
     // Static arrays are by default 0 initialized in CPP,
     // don't know if same is done with v++ compiler
     // https://stackoverflow.com/questions/201101/how-to-initialize-all-members-of-an-array-to-the-same-value
     static unsigned int cm_sketch_local[cm_rows][cm_col_count];
+    // Verify what exactly is the partitioning doing
     #pragma HLS ARRAY_PARTITION variable=cm_sketch_local complete dim=1
     printf("From runOnfpga : Total_size = %d\n", total_size);
 
@@ -131,11 +132,15 @@ extern "C"
 
     if(download_sketch==true)
     {
-    write_cm_sketch: for(int row = 0; row<cm_rows; row++) {
-        for(int index = 0; index<cm_col_count; index++) {
+      // From: https://github.com/Xilinx/SDAccel_Examples/blob/master/getting_started/cpu_to_fpga/02_local_mem_c/src/mmult.cpp
+    write_cm_sketch: for(unsigned iter = 0, row = 0, col = 0;
+                         iter < cm_col_count * cm_rows; iter++, col++) {
 #pragma HLS PIPELINE II=1
-          cm_sketch[row][index] = cm_sketch_local[row][index];
+        if(col == cm_col_count) {
+          col = 0;
+          row++;
         }
+        cm_sketch[iter] = cm_sketch_local[row][col];
       }
     }
   }

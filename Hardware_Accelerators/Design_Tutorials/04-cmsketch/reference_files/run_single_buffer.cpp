@@ -18,7 +18,7 @@ unsigned size_per_iter;
 void runOnFPGA(
                unsigned int*  doc_sizes,
                unsigned int*  input_doc_words,
-               unsigned int   cm_sketch[cm_rows][cm_col_count],
+               unsigned int*  cm_sketch,
                unsigned int   total_num_docs,
                unsigned int   total_doc_size,
                int            num_iter)

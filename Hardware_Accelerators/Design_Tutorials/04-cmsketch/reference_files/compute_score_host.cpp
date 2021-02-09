@@ -8,6 +8,7 @@
 
 // sizes.h automatically included by common.h
 #include "common.h"
+#include "sizes.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -15,7 +16,7 @@ using namespace std::chrono;
 void runOnCPU (
     unsigned int*  doc_sizes,
     unsigned int*  input_doc_words,
-    unsigned int   cm_sketch[cm_rows][cm_col_count],
+    unsigned int*  cm_sketch,
     unsigned int   total_num_docs,
     unsigned int   total_size)
 {
@@ -36,7 +37,7 @@ void runOnCPU (
             for(int row = 0; row < cm_rows; row++) {
               unsigned hash = MurmurHash2(&word_id, 3, cm_seeds[row]);
               unsigned index = hash % cm_col_count;
-              cm_sketch[row][index]++;
+              cm_sketch[row * cm_col_count + index]++;
             }
         }
         size_offset+=size;

@@ -16,9 +16,9 @@ using namespace std;
 using namespace std::chrono;
 
 
-vector<unsigned int,aligned_allocator<unsigned int>> input_doc_words;
-unsigned int cpu_cm_sketch[cm_rows][cm_col_count];
-unsigned int fpga_cm_sketch[cm_rows][cm_col_count];
+vector<unsigned int, aligned_allocator<unsigned int>> input_doc_words;
+vector<unsigned int,aligned_allocator<unsigned int>> cpu_cm_sketch;
+vector<unsigned int,aligned_allocator<unsigned int>> fpga_cm_sketch;
 vector<unsigned int,aligned_allocator<unsigned int>> starting_doc_id;
 vector<unsigned int,aligned_allocator<unsigned int>> doc_sizes;
 
@@ -77,6 +77,11 @@ void setupData()
     // see whats the benefit of reserve here
     // dynamic memory allocation?
     // bloom_filter.reserve( (1L << bloom_size) );
+    cpu_cm_sketch.reserve(cm_col_count * cm_rows);
+    fpga_cm_sketch.reserve(cm_col_count * cm_rows);
+    std::fill(fpga_cm_sketch.begin(), fpga_cm_sketch.end(), 0);
+    std::fill(cpu_cm_sketch.begin(), cpu_cm_sketch.end(), 0);
+
     input_doc_words.reserve( size );
 
     // double mbytes = size*sizeof(int)/(1000000.0);
@@ -133,21 +138,13 @@ int main(int argc, char** argv)
     block_size = num_iter*64;
     setupData();
 
-    for(int row = 0; row < cm_rows; row++) {
-      for(int col = 0; col < cm_col_count; col++) {
-        fpga_cm_sketch[row][col] = 0;
-        cpu_cm_sketch[row][col] = 0;
-      }
-    }
-
-
     //printf ("Sending data on FPGA  Doc_sizes = %lu\n ", doc_sizes.size());
     //std::cout << "Sending data on FPGA  Doc_sizes " <<  doc_sizes.size() << endl;
     //std::cout << "Input Doc Words " <<  input_doc_words.size() << endl;
     runOnFPGA(
         doc_sizes.data(),
         input_doc_words.data(),
-        fpga_cm_sketch,
+        fpga_cm_sketch.data(),
         total_num_docs,
         size,
         num_iter) ;
@@ -155,7 +152,7 @@ int main(int argc, char** argv)
      runOnCPU(
         doc_sizes.data(),
         input_doc_words.data(),
-        cpu_cm_sketch,
+        cpu_cm_sketch.data(),
         total_num_docs,
         size) ;
   
@@ -165,25 +162,30 @@ int main(int argc, char** argv)
     // one entry in each row is corrupted up due to padding above.
     // for now just ignore comparing those entries.
     std::cout<<"Due to padding, [" <<cm_rows<<"] mismatches are expected"<<endl;
-    for(int row = 0; row < cm_rows; row++) {
-      for(unsigned int col = 0; col < cm_col_count; col++) {
-        if(fpga_cm_sketch[row][col] != cpu_cm_sketch[row][col]) {
-          std::cout << " Mismatch at: " << endl
-                    << " row[" << row << "]"
-                    << " col[" << col << "]"
-                    << " Sketch: CPU = " << cpu_cm_sketch[row][col]
-                    << ", FPGA = "<< fpga_cm_sketch[row][col] << endl;
-          faulty++;
-          // return 0;
-        }
-        // else {
-        //   std::cout << "[" << row << ", " << col <<"]"
-        //             << "(f: " << fpga_cm_sketch[row][col]
-        //             << ", c: " << cpu_cm_sketch[row][col] << ")" <<endl;
-        // }
+    for(unsigned iter = 0, row = 0, col = 0;
+                      iter < cm_col_count * cm_rows; iter++, col++) {
+      if(col == cm_col_count) {
+        col = 0;
+        row++;
+        std::cout<<endl;
       }
-      std::cout<<endl;
+
+      if(fpga_cm_sketch[iter] != cpu_cm_sketch[iter]) {
+        std::cout << " Mismatch at: " << endl
+                  << " row[" << row << "]"
+                  << " col[" << col << "]"
+                  << " Sketch: CPU = " << cpu_cm_sketch[iter]
+                  << ", FPGA = "<< fpga_cm_sketch[iter] << endl;
+        faulty++;
+        // return 0;
+      }
+      // else {
+      //   std::cout << "[" << row << ", " << col <<"]"
+      //             << "(f: " << fpga_cm_sketch[iter]
+      //             << ", c: " << cpu_cm_sketch[iter] << ")" <<endl;
+      // }
     }
+
     if(faulty <= cm_rows) {
       cout << " Verification: PASS" << endl;
       cout << endl;
